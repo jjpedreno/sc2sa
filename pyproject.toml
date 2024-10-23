@@ -1,0 +1,24 @@
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools>=75.2.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sc2sa"
+version = "1.0.0"
+description = "Converts Scalable Capital csv file transactions to the Snowball Analytics format"
+readme = "README.md"
+authors = [{ name = "José Juan Pedreño", email = "jjpedreno@gmail.com" }]
+license = { file = "LICENSE" }
+dynamic = ["dependencies"]
+requires-python = ">=3.11"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[project.urls]
+Homepage = "https://github.com/jjpedreno/sc2sa"
+
+[project.scripts]
+sc2sa = "sc2sa.__main__:main"
