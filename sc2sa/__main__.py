@@ -14,6 +14,11 @@ class SCALABLECAPITAL:
     lineterminator = '\n'
     quoting = csv.QUOTE_MINIMAL
 
+def str_to_float(string):
+    if string == '' or string is None:
+        string = '0.0'
+    return float(string.replace('.', '').replace(',', '.'))
+
 def convert_data(input_path):
     """
     Scalable Capital Format
@@ -34,7 +39,7 @@ def convert_data(input_path):
     """
 
     file_path = Path(input_path)
-    logger.debug(f"Input file path = {file_path.absolute()}")
+    logger.info(f"Input file path = {file_path.absolute()}")
 
     dict_event = {
         'deposit': 'CASH_IN',
@@ -47,6 +52,10 @@ def convert_data(input_path):
     with open(file_path, encoding='UTF-8') as csv_file:
         transactions =csv.DictReader(csv_file, dialect=SCALABLECAPITAL)
         for row in transactions:
+
+            # If the line is empty, just skip
+            if row['date'] == '' or row['date'] is None:
+                continue
 
             # Event
             event = dict_event.get(row['type'].casefold())
@@ -63,20 +72,20 @@ def convert_data(input_path):
             # Price
             if event == 'FEE':
                 price = 0
-            if event == 'DIVIDEND':
+            elif event == 'DIVIDEND':
                 price = 0
             elif event == 'CASH_IN':
                 price = 1
             else:
-                price = float(row['price'].replace(',', '.'))
+                price = str_to_float(row['price'])
 
             # Quantity
             if event == 'CASH_IN':
-                quantity = row['amount'].replace('.','').replace(',', '.')
+                quantity = str_to_float(row['amount'])
             elif event == 'FEE':
                 quantity = 0
             elif event == 'DIVIDEND':
-                quantity = quantity = row['amount'].replace('.','').replace(',', '.')
+                quantity = str_to_float(row['amount'])
             else:
                 quantity = row['shares']
 
@@ -87,9 +96,12 @@ def convert_data(input_path):
             currency = row['currency']
 
             # FeeTax
-            fee = row['fee'].replace('.','').replace(',', '.')
-            tax = row['tax'].replace('.','').replace(',', '.')
+            fee = str_to_float(row['fee'])
+            tax = str_to_float(row['tax'])
             feetax = fee + tax
+
+            if event == 'FEE': # Override all of the above if it's a FEE event
+                feetax = str_to_float(row['amount']) * -1.0
 
             # Exchange
             exchange = ''
@@ -123,17 +135,17 @@ if __name__ == '__main__':
     log_level = "DEBUG"
     logger.remove(0)
     logger.add(sys.stderr, level=log_level)
-    logger.debug("Starting program...")
+    logger.info("Starting program...")
 
     converted_data = convert_data(input_path)
-    first_line = "Event,Date,Symbol,Price,Quantity,Currency,FeeTax,Exchange,FeeCurrency,DoNotAdjustCash,Note"
-
+    first_line = "Event,Date,Symbol,Price,Quantity,Currency,FeeTax,Exchange,FeeCurrency,DoNotAdjustCash,Note\n"
 
     today= datetime.today()
-    output_path = args.output_file.format(date=today.strftime("%Y%m%d"))
+    output_path = Path(args.output_file.format(date=today.strftime("%Y%m%d")))
+
     with open(output_path, "w", newline='', encoding='utf-8') as output_file:
-        output_file.writelines(first_line)
+        output_file.write(first_line)
         csvwriter = csv.writer(output_file, delimiter=',', quotechar='\"', quoting=csv.QUOTE_MINIMAL)
         for row in converted_data:
             csvwriter.writerow(row)
-
+    logger.info(f"Output file written to {output_path.absolute()}")
