@@ -124,11 +124,11 @@ def argument_parser():
     parser = argparse.ArgumentParser(description=f"Converts a CSV export file from Scalable capital to \
                                                  the Snowball Analytics CSV format")
     parser.add_argument("filename", help="Input CSV file to be converted")
-    parser.add_argument("-d", "--debug", action="store_true", help="Show debuffing log traces")
+    parser.add_argument("-d", "--debug", action="store_true", help="Show debugging log traces")
     parser.add_argument("-o", "--output-file", default="Scalable_capital_transactions_{date}.csv", help="Output file")
     return parser.parse_args()
 
-if __name__ == '__main__':
+def main():
     args = argument_parser()
     input_path = args.filename
 
@@ -140,7 +140,7 @@ if __name__ == '__main__':
     converted_data = convert_data(input_path)
     first_line = "Event,Date,Symbol,Price,Quantity,Currency,FeeTax,Exchange,FeeCurrency,DoNotAdjustCash,Note\n"
 
-    today= datetime.today()
+    today = datetime.today()
     output_path = Path(args.output_file.format(date=today.strftime("%Y%m%d")))
 
     with open(output_path, "w", newline='', encoding='utf-8') as output_file:
@@ -149,3 +149,6 @@ if __name__ == '__main__':
         for row in converted_data:
             csvwriter.writerow(row)
     logger.info(f"Output file written to {output_path.absolute()}")
+
+if __name__ == '__main__':
+    main()
